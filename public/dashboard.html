@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>KEYFRAME dashboard</title>
+<style>
+ body{font:15px system-ui,sans-serif;background:#0d0d14;color:#eee;margin:0;padding:28px;max-width:860px}
+ h1{letter-spacing:.2em;font-size:18px;color:#00f5d4} h2{font-size:12px;letter-spacing:.2em;color:#9b9bb0;margin:26px 0 8px}
+ button{background:#1b1b2e;color:#fff;border:1px solid #34345a;border-radius:8px;padding:8px 12px;margin:3px;cursor:pointer}
+ button:hover{border-color:#00f5d4} code{background:#1b1b2e;padding:2px 6px;border-radius:5px}
+ #st span{display:inline-block;margin-right:18px} .off{opacity:.45;pointer-events:none}
+ input{background:#1b1b2e;color:#fff;border:1px solid #34345a;border-radius:8px;padding:8px;width:260px}
+</style></head><body>
+<h1>KEYFRAME · DIRECTOR DASHBOARD</h1>
+<p>Overlay URL for OBS Browser Source (1920×1080): <code id="url"></code></p>
+<h2>LIVE STATE</h2><div id="st">connecting…</div>
+<h2>ROUND</h2>
+<button onclick="post('/api/resolve')">Resolve round now</button>
+<a href="/api/reel" download="keyframe-reel.json"><button>Download reel (JSON)</button></a>
+<div id="sim"><h2>SIMULATOR (mock mode only)</h2>
+<div id="btns"></div>
+<p><input id="chat" placeholder="type a chat line, e.g. !ease elastic"> <button onclick="chat()">Send as viewer</button></p></div>
+<script>
+const $=(i)=>document.getElementById(i); $('url').textContent=location.origin+'/';
+const post=(u,b)=>fetch(u,{method:'POST',body:b?JSON.stringify(b):undefined});
+const sim=(e)=>post('/api/sim',e); const chat=()=>{sim({type:'chat',user:'you',text:$('chat').value,color:'#6bf0ff'});$('chat').value='';};
+const EV={follow:{type:'follow',user:'new_viewer'},sub:{type:'sub',user:'big_fan',tier:1,months:3},gift:{type:'gift',user:'generous',total:5},cheer:{type:'cheer',user:'bitlord',bits:500},raid:{type:'raid',user:'friend_streamer',viewers:120},hype:{type:'hype',level:2},pulse:{type:'chat',user:'you',text:'!pulse'},'reward: palette':{type:'redeem',user:'you',reward:'Change Palette',input:'candy'},'reward: chaos':{type:'redeem',user:'you',reward:'Chaos',input:''}};
+$('btns').innerHTML=Object.keys(EV).map(k=>`<button onclick='sim(EV["${k}"])'>${k}</button>`).join('');
+const ws=new WebSocket(`ws://${location.host}/ws`);
+ws.onmessage=(e)=>{const m=JSON.parse(e.data); if(m.t==='hello'&&!m.mock)$('sim').classList.add('off'); if(m.state)$('st').innerHTML=Object.entries(m.state).map(([k,v])=>`<span>${k}: <b>${v}</b></span>`).join('')+`<span>heat: <b>${m.heat.toFixed(2)}</b></span><span>round ${m.round.id}: ${Math.max(0,Math.round((m.round.endsAt-Date.now())/1000))}s</span>`;};
+</script></body></html>

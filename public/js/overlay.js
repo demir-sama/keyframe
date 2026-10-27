@@ -136,12 +136,12 @@ function fx(m) {
     case 'sub': banner({ kicker: m.months > 1 ? `RESUB × ${m.months}` : 'NEW SUB', title: m.user, sub: 'chat votes now count double', accent: 2 }); shock(AX, AY, 1.4); burst(AX, AY, 46, { speed: 900 }); break;
     case 'gift': banner({ kicker: 'GIFT SUBS', title: m.user, sub: 'spread the love', count: m.total, accent: 2 }); rain(30 + m.total * 6); break;
     case 'cheer': banner({ kicker: 'CHEERED', title: m.user, count: m.bits, sub: 'bits', accent: 3 }); rain(Math.min(160, 20 + m.bits / 8), 3); break;
-    case 'raid': banner({ kicker: 'INCOMING RAID', title: m.user, count: m.viewers, sub: 'viewers', accent: 3 }); sweep = 0; tw.to(window, '_sweep', 1, 1.4, { ease: 'snap' }); shock(AX, AY, 2); burst(AX, AY, 80, { speed: 1100 }); break;
+    case 'raid': banner({ kicker: 'INCOMING RAID', title: m.user, count: m.viewers, sub: 'viewers', accent: 3 }); window._sweep = 0; tw.to(window, '_sweep', 1, 1.4, { ease: 'snap' }); shock(AX, AY, 2); burst(AX, AY, 80, { speed: 1100 }); break;
     case 'hype': banner({ kicker: 'HYPE TRAIN', title: `LEVEL ${m.level}`, accent: 3 }); shock(AX, AY, 1.6); shock(AX, AY, 2.2); actor.forEach((p) => { p.kick = 0; tw.to(p, 'kick', 1, 0.4, { ease: 'elastic', done: () => tw.to(p, 'kick', 0, 1.2, { ease: 'smooth' }) }); }); break;
     case 'redeem': banner({ kicker: 'REWARD', title: m.reward, sub: `by ${m.user}` }); break;
   }
 }
-let sweep = 0; window._sweep = 0;
+window._sweep = 0;
 
 // ---------- websocket ----------
 function connect() {
@@ -236,7 +236,7 @@ function drawChat(dt) {
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   for (const l of lines) {
     l.age += dt; const fade = l.age > 6 ? Math.max(0, 1 - (l.age - 6) * 1.5) : 1;
-    ctx.save(); ctx.globalAlpha = l.a * fade; ctx.translate(64 + (1 - l.a) * -40, H - 330 + l.y);
+    ctx.save(); ctx.globalAlpha = l.a * fade; ctx.translate(64 + (1 - l.a) * -40, H - 60 + l.y);
     ctx.font = '700 24px system-ui, sans-serif'; ctx.fillStyle = l.color; ctx.fillText(l.user, 0, 0);
     const w = ctx.measureText(l.user).width; ctx.font = '500 24px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillText('  ' + l.text, w, 0); ctx.restore();
   }
@@ -245,28 +245,23 @@ function drawChat(dt) {
 function drawBanners() {
   banners.forEach((b, idx) => {
     const y = 120 + idx * 150; const accent = pal()[b.accent % 4];
-    ctx.save(); ctx.translate(b.x - b.out * 800, y);
-    ctx.fillStyle = 'rgba(12,12,22,0.82)'; ctx.beginPath(); ctx.roundRect(0, 0, 620 * b.wipe, 120, 14); ctx.fill();
+    const title = (b.count ? `${b.title}  ·  ${Math.round(b.shown).toLocaleString()}` : b.title).slice(0, 64);
+    ctx.font = '800 38px system-ui, sans-serif';
+    const bw = Math.max(560, Math.min(1100, ctx.measureText(title).width + 80));
+    ctx.save(); ctx.translate(b.x - b.out * 1200, y);
+    ctx.fillStyle = 'rgba(12,12,22,0.82)'; ctx.beginPath(); ctx.roundRect(0, 0, bw * b.wipe, 120, 14); ctx.fill();
     ctx.fillStyle = rgba(accent); ctx.fillRect(0, 0, 10, 120 * b.wipe);
-    ctx.beginPath(); ctx.roundRect(0, 0, 620 * b.wipe, 120, 14); ctx.clip();
+    ctx.beginPath(); ctx.roundRect(0, 0, bw * b.wipe, 120, 14); ctx.clip();
     ctx.globalAlpha = Math.min(1, b.text * 1.5); ctx.translate(34, (1 - Math.min(1, b.text)) * 24);
     ctx.font = '700 18px system-ui, sans-serif'; ctx.fillStyle = rgba(accent); ctx.letterSpacing = '4px'; ctx.fillText(b.kicker, 0, 34); ctx.letterSpacing = '0px';
-    ctx.font = '800 38px system-ui, sans-serif'; ctx.fillStyle = '#fff';
-    const title = b.count ? `${b.title}  ·  ${Math.round(b.shown).toLocaleString()}` : b.title; ctx.fillText(title.length > 30 ? title.slice(0, 29) + '…' : title, 0, 78);
+    ctx.font = '800 38px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(title, 0, 78);
     if (b.sub) { ctx.font = '500 18px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.fillText(b.sub, 0, 104); }
     ctx.restore();
   });
 }
 function drawHud(dt) {
-  const x0 = 64, y0 = H - 270; const colors = pal();
-  ctx.save(); ctx.translate(x0, y0 - 600 * 0); ctx.textBaseline = 'alphabetic';
-  // round timer ring
+  const colors = pal();
   const remaining = Math.max(0, round.endsAt - Date.now()); const frac = Math.min(1, remaining / round.ms);
-  ctx.translate(0, 0);
-  ctx.save(); ctx.translate(150, -690); // placed top of panel stack
-  ctx.restore();
-  const panelY = -0; // panel drawn upward from chat region: top-right of left column
-  ctx.restore();
   // panel: top-left column under banners
   const px = 64, py = 560;
   ctx.save(); ctx.translate(px, py);
@@ -277,19 +272,21 @@ function drawHud(dt) {
   ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.beginPath(); ctx.arc(386, 26, 12, 0, Math.PI * 2); ctx.stroke();
   ctx.strokeStyle = rgba(colors[0]); ctx.beginPath(); ctx.arc(386, 26, 12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac); ctx.stroke();
   CATS.forEach((c, i) => {
-    const row = hud.rows[c]; const y = 66 + i * 40;
-    ctx.font = '700 15px system-ui, sans-serif'; ctx.fillStyle = `rgba(255,255,255,${0.55 + row.flash * 0.45})`; ctx.fillText(c.toUpperCase(), 20, y + 8);
-    ctx.font = '700 18px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(state[c], 104, y + 8);
-    // top-3 candidate bars
-    const entries = Object.entries(row.bars).sort((a, b) => b[1].tw - a[1].tw).slice(0, 3);
-    entries.forEach(([k, bar], j) => {
-      bar.w += (bar.tw - bar.w) * Math.min(1, dt * 8);
-      if (bar.w < 0.01 && bar.tw === 0) return;
-      const bx = 220 + j * 62; const h = 8 + bar.w * 22;
-      ctx.fillStyle = rgba(colors[j % 4], 0.85); ctx.beginPath(); ctx.roundRect(bx, y + 10 - h, 52, h, 3); ctx.fill();
-      ctx.font = '600 11px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText(k, bx, y + 22);
+    const row = hud.rows[c]; const y = 68 + i * 38;
+    ctx.font = '700 14px system-ui, sans-serif'; ctx.fillStyle = `rgba(255,255,255,${0.55 + row.flash * 0.45})`; ctx.fillText(c.toUpperCase(), 20, y + 6);
+    ctx.font = '700 18px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(state[c], 100, y + 6);
+    // stacked vote bar: one segment per candidate, widths ease toward live tally share
+    const entries = Object.entries(row.bars);
+    entries.forEach(([, bar]) => { bar.w += (bar.tw - bar.w) * Math.min(1, dt * 8); });
+    let bx = 200; const BW = 200;
+    ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.roundRect(200, y - 12, BW, 24, 6); ctx.fill();
+    entries.sort((a, b) => b[1].tw - a[1].tw).forEach(([k, bar], j) => {
+      const w = bar.w * BW; if (w < 3) return;
+      ctx.fillStyle = rgba(colors[j % 4], 0.9); ctx.beginPath(); ctx.roundRect(bx + 1, y - 11, Math.max(2, w - 2), 22, 5); ctx.fill();
+      if (w > 44) { ctx.font = '700 12px system-ui, sans-serif'; ctx.fillStyle = '#0b0b14'; ctx.fillText(k, bx + 7, y + 4); }
+      bx += w;
     });
   });
-  ctx.font = '500 13px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillText('type !ease !palette !shape !tempo !pulse !say', 20, 216);
+  ctx.font = '500 13px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillText('type !ease  !palette  !shape  !tempo  !pulse  !say', 20, 216);
   ctx.restore();
 }
