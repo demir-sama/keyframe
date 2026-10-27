@@ -1,0 +1,17 @@
+{
+  "name": "keyframe-chat",
+  "version": "0.1.0",
+  "description": "KEYFRAME — chat directs the motion. A viewer-driven animated Twitch overlay powered by EventSub.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Demir <demirsamahash@gmail.com>",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.js",
+    "mock": "MOCK=1 node src/index.js",
+    "demo": "MOCK=1 DEMO=1 node src/index.js",
+    "auth": "node scripts/auth.js",
+    "test": "node --test tests/"
+  },
+  "dependencies": { "ws": "^8.18.0" }
+}
